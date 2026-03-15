@@ -10,45 +10,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Build with Buildozer
+      uses: ArtemSBulgakov/buildozer-action@v1
+      id: buildozer
       with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
-        pip install buildozer cython==0.29.33
-
-    - name: Accept Android licenses
-      run: |
-        mkdir -p ~/.android
-        touch ~/.android/repositories.cfg
-        yes | buildozer android update 2>/dev/null || true
-        find ~/.buildozer -name "*.jar" 2>/dev/null | head -5
-        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-
-    - name: Create main.py
-      run: cp myos_launcher.py main.py
-
-    - name: Create buildozer.spec
-      run: |
-        buildozer init
-        sed -i 's/^title = .*/title = MyOS/' buildozer.spec
-        sed -i 's/^package.name = .*/package.name = myos/' buildozer.spec
-        sed -i 's/^package.domain = .*/package.domain = org.myos/' buildozer.spec
-        sed -i 's/^requirements = .*/requirements = python3,kivy==2.2.1/' buildozer.spec
-        sed -i 's/^android.api = .*/android.api = 33/' buildozer.spec
-        sed -i 's/^android.minapi = .*/android.minapi = 21/' buildozer.spec
-        echo "android.accept_sdk_license = True" >> buildozer.spec
-
-    - name: Build APK
-      run: |
-        yes | buildozer -v android debug
+        command: buildozer android debug
+        buildozer_version: stable
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: MyOS-APK
-        path: bin/*.apk
+        path: ${{ steps.buildozer.outputs.filename }}
