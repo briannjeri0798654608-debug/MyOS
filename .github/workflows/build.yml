@@ -17,33 +17,29 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install buildozer cython kivy
-        sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+        sudo apt-get update
+        sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+        pip install buildozer cython==0.29.33
+
+    - name: Create main.py
+      run: |
+        cp myos_launcher.py main.py
 
     - name: Create buildozer.spec
       run: |
-        cat > buildozer.spec << 'SPEC'
-        [app]
-        title = MyOS
-        package.name = myos
-        package.domain = org.myos
-        source.dir = .
-        source.include_exts = py,png,jpg,kv,atlas
-        version = 2.0
-        requirements = python3,kivy
-        orientation = portrait
-        fullscreen = 1
-        android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
-        android.api = 33
-        android.minapi = 21
-        android.archs = arm64-v8a
-        [buildozer]
-        log_level = 2
-        SPEC
+        buildozer init
+        sed -i 's/^title = .*/title = MyOS/' buildozer.spec
+        sed -i 's/^package.name = .*/package.name = myos/' buildozer.spec
+        sed -i 's/^package.domain = .*/package.domain = org.myos/' buildozer.spec
+        sed -i 's/^requirements = .*/requirements = python3,kivy==2.2.1,kivymd/' buildozer.spec
+        sed -i 's/^#android.permissions = .*/android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE/' buildozer.spec
+        sed -i 's/^android.api = .*/android.api = 33/' buildozer.spec
+        sed -i 's/^android.minapi = .*/android.minapi = 21/' buildozer.spec
+        sed -i 's/^#android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
 
     - name: Build APK
       run: |
-        buildozer android debug
+        buildozer -v android debug 2>&1 | tail -50
 
     - name: Upload APK
       uses: actions/upload-artifact@v3
